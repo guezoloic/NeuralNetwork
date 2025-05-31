@@ -12,6 +12,11 @@ def sigmoid_deriv(x):
 
 # neuron class
 class Neuron:
+    """
+    z: linear combination of inputs and weights plus bias (pre-activation)
+    y : output of the activation function (sigmoid(z))
+    w : list of weights, one for each input
+    """
     def __init__(self, isize):
         # number of inputs to this neuron
         self.isize = isize
@@ -21,24 +26,39 @@ class Neuron:
         self.bias = random.uniform(-1, 1)
 
         # last z (linear combination) value
-        self.last_z = 0
+        self.z = 0
         # last output sigmoid(z)
         self.last_output = 0
 
     def forward(self, x):
-        z = sum(w * xi for w, xi in zip(self.weight, x)) + self.bias
-        self.last_z = z
-        self.last_output = sigmoid(z)
+        # computes the weighted sum of inputs and add the bias
+        self.z = sum(w * xi for w, xi in zip(self.weight, x)) + self.bias
+        # normalize the output between 0 and 1
+        self.last_output = sigmoid(self.z)
         return self.last_output
     
+    # adjust weight and bias
     def backward(self, x, dcost_dy, learning_rate):
-        dy_dz = sigmoid_deriv(self.last_z)
+        """
+        x               : list of input values to the neuron  
+        dcost_dy        : derivate of the cost function `(2 * (output - target))`
+        learning_rate   : learning factor (adjust the speed of weight/bias change during training)
+
+        weight -= learning_rate * dC/dy * dy/dz * dz/dw
+        bias   -= learning_rate * dC/dy * dy/dz * dz/db
+        """
+        # dy/dz: derivate of the sigmoid activation
+        dy_dz = sigmoid_deriv(self.z)
+        # dz/dw = x
         dz_dw = x
+        # dz/db = 1
         dz_db = 1
 
         for i in range(self.isize):
+            # update all weights by `learning_rate * cost * derivate sigmoid * dz/dw`
             self.weight[i] -= learning_rate * dcost_dy * dy_dz * dz_dw[i]
 
+        # update bias by`learning_rate * cost * derivate sigmoid * dz/db`
         self.bias -= learning_rate * dcost_dy * dy_dz * dz_db
 
 #     def forward(self, inputs: list[float]) -> float:
