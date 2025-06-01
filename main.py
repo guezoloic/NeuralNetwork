@@ -13,9 +13,9 @@ def sigmoid_deriv(x):
 # neuron class
 class Neuron:
     """
-    z: linear combination of inputs and weights plus bias (pre-activation)
-    y : output of the activation function (sigmoid(z))
-    w : list of weights, one for each input
+    z                   : linear combination of inputs and weights plus bias (pre-activation)
+    y                   : output of the activation function (sigmoid(z))
+    w                   : list of weights, one for each input
     """
     def __init__(self, isize):
         # number of inputs to this neuron
@@ -31,13 +31,16 @@ class Neuron:
         self.last_output = 0
 
     def forward(self, x):
+        """
+        x               : list of input values to the neuron
+        """
         # computes the weighted sum of inputs and add the bias
         self.z = sum(w * xi for w, xi in zip(self.weight, x)) + self.bias
         # normalize the output between 0 and 1
         self.last_output = sigmoid(self.z)
         return self.last_output
     
-    # adjust weight and bias
+    # adjust weight and bias of neuron
     def backward(self, x, dcost_dy, learning_rate):
         """
         x               : list of input values to the neuron  
@@ -55,44 +58,44 @@ class Neuron:
         dz_db = 1
 
         for i in range(self.isize):
-            # update all weights by `learning_rate * cost * derivate sigmoid * dz/dw`
+            # update each weight `weight -= learning_rate * dC/dy * dy/dz * x_i`
             self.weight[i] -= learning_rate * dcost_dy * dy_dz * dz_dw[i]
 
-        # update bias by`learning_rate * cost * derivate sigmoid * dz/db`
+        # update bias: bias -= learning_rate * dC/dy * dy/dz * dz/db
         self.bias -= learning_rate * dcost_dy * dy_dz * dz_db
 
-#     def forward(self, inputs: list[float]) -> float:
-#         assert len(inputs) == self.isize, "error: incorrect inputs number"
-#         total = sum(self.weight[i] * inputs[i] for i in range(self.isize)) + self.bias
-#         return sigmoid(total)
+        # return gradient vector len(input) dimension
+        return [dcost_dy * dy_dz * w for w in self.weight]
 
-#     def train(self, inputs: list[float], target: float, learning_rate: float = 0.1):
-#         assert len(inputs) == self.isize, "error: incorrect inputs number"
-        
-#         z = sum(self.weight[i] * inputs[i] for i in range(self.isize)) + self.bias
-#         output = sigmoid(z)
 
-#         error = output - target
-#         d_sigmoid = output * (1 - output)
-#         dz = error * d_sigmoid
+class Layer:
+    def __init__(self, input_size, output_size):
+        """
+        input_size      : size of each neuron input
+        output_size     : size of neurons
+        """
+        self.size = output_size
+        # list of neurons
+        self.neurons = [Neuron(input_size) for _ in range(output_size)]
 
-#         for i in range(self.isize):
-#             self.weight[i] -= learning_rate * dz * inputs[i]
+    def forward(self, inputs):
+        self.inputs = inputs
+        #  compute and return the outputs of all neurons in the layer
+        return [neuron.forward(inputs) for neuron in self.neurons]
 
-#         self.bias -= learning_rate * dz
+    # adjust weight and bias of the layer (all neurons)
+    def backward(self, dcost_dy_list, learning_rate=0.1):
+        # init layer gradient vector len(input) dimention
+        input_gradients = [0.0] * len(self.inputs)
 
-# class Layer:
-#     def __init__(self, input_size, output_size):
-#         self.size = output_size
-#         self.neurons = [Neuron(output_size) for _ in range(input_size)]
-    
-#     def forward(self, inputs):
-#         return [n.forward(inputs) for n in self.neurons]
+        for i, neuron in enumerate(self.neurons):
+            dcost_dy = dcost_dy_list[i]
+            grad_to_input = neuron.backward(self.inputs, dcost_dy, learning_rate)
 
-#     def train(self, inputs: list[float], targets: list[float], learning_rate: float = 0.1):
-#         outputs = self.forward(inputs)
+            # compute all neuron's gradient inside layer gradient
+            # accumulate the input gradients from all neurons
+            for j in range(len(grad_to_input)):
+                input_gradients[j] += grad_to_input[j]
 
-#         errors = [outputs[i] - targets[i] for i in range(self.size)]
-
-#         for i in range(self.neurons):
-#             self.neurons[i].train(inputs, errors[i], learning_rate)
+        # return layer gradient
+        return input_gradients
