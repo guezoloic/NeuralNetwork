@@ -30,14 +30,16 @@ class Neuron:
         # last output sigmoid(z)
         self.last_output = 0
 
-    def forward(self, x):
+    def forward(self, x, activate=True):
         """
         x               : list of input values to the neuron
         """
         # computes the weighted sum of inputs and add the bias
         self.z = sum(w * xi for w, xi in zip(self.weight, x)) + self.bias
         # normalize the output between 0 and 1
-        self.last_output = sigmoid(self.z)
+        if activate: self.last_output = sigmoid(self.z)
+        else: self.last_output = self.z
+
         return self.last_output
     
     # adjust weight and bias of neuron
@@ -54,6 +56,9 @@ class Neuron:
         dy_dz = sigmoid_deriv(self.z)
         # dz/dw = x
         dz_dw = x
+
+        assert len(dz_dw) >= self.isize, "too many value for input size"
+
         # dz/db = 1
         dz_db = 1
 
@@ -78,10 +83,10 @@ class Layer:
         # list of neurons
         self.neurons = [Neuron(input_size) for _ in range(output_size)]
 
-    def forward(self, inputs):
+    def forward(self, inputs, activate=True):
         self.inputs = inputs
         #  give the same inputs to each neuron in the layer
-        return [neuron.forward(inputs) for neuron in self.neurons]
+        return [neuron.forward(inputs, activate) for neuron in self.neurons]
 
     # adjust weight and bias of the layer (all neurons)
     def backward(self, dcost_dy_list, learning_rate=0.1):
@@ -105,8 +110,9 @@ class NeuralNetwork:
 
     def forward(self, inputs):
         output = inputs
-        for layer in self.layers:
-            output = layer.forward(output)
+        for i, layer in enumerate(self.layers):
+            activate = (i != len(self.layers) - 1)  # deactivate sigmoid latest neuron
+            output = layer.forward(output, activate=activate)
         return output
 
     def backward(self, inputs, targets, learning_rate=0.1):
@@ -117,7 +123,7 @@ class NeuralNetwork:
         output = self.forward(inputs)
 
         # computes the initial gradient of the cost function for each neuron
-        # by using Mean Squared Error: dC/dy = 2 * (output - target)
+        # by using Mean Squared Error's derivate: dC/dy = 2 * (output - target)
         dcost_dy_list = [2 * (o - t) for o, t in zip(output, targets)]
 
         grad = dcost_dy_list
