@@ -25,22 +25,16 @@ class Neuron:
         # importance of the neuron
         self.bias = random.uniform(-1, 1)
 
-        # last z (linear combination) value
-        self.z = 0
-        # last output sigmoid(z)
-        self.last_output = 0
-
     def forward(self, x, activate=True):
         """
         x               : list of input values to the neuron
         """
         # computes the weighted sum of inputs and add the bias
         self.z = sum(w * xi for w, xi in zip(self.weight, x)) + self.bias
-        # normalize the output between 0 and 1
-        if activate: self.last_output = sigmoid(self.z)
-        else: self.last_output = self.z
+        # normalize the output between 0 and 1 if activate
+        last_output = sigmoid(self.z) if activate else self.z
 
-        return self.last_output
+        return last_output
     
     # adjust weight and bias of neuron
     def backward(self, x, dcost_dy, learning_rate):
