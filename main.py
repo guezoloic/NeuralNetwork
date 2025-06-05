@@ -32,7 +32,7 @@ def main():
     network = NeuralNetwork([8, 16, 1])
 
     print("Start training...")
-    train_network(network, verbose=True, size_data=size, epochs=45_000)
+    train_network(network, verbose=True, size_data=size, epochs=5_000)
     print("End training...")
 
     while True:
